@@ -50,9 +50,9 @@ class CarbOnSeer:
         self.http_enabled = cfg.get("http_api", {}).get("enabled", True)
         self.cache_ttl = cfg.get("cache_ttl_seconds", 300)
 
-    # ---------------------------
+
     # Prometheus queries
-    # ---------------------------
+   
     def query_p95(self):
         q = 'histogram_quantile(0.95, sum(rate(demo_request_latency_seconds_bucket[1m])) by (le))'
         try:
@@ -64,9 +64,8 @@ class CarbOnSeer:
             print("Prometheus query error:", e)
         return None
 
-    # ---------------------------
     # Carbon providers
-    # ---------------------------
+ 
     def fetch_electricitymap(self, zone):
         prov = self.providers.get("electricitymap", {})
         api_key = prov.get("api_key") or os.getenv("ELECTRICITYMAP_API_KEY")
@@ -147,9 +146,9 @@ class CarbOnSeer:
         self._carbon_cache[region] = (val, now)
         return val
 
-    # ---------------------------
+
     # scoring & scaling
-    # ---------------------------
+ 
     def compute_scores(self, p95_ms, region='local'):
         # SLO score: 1 if p95 <= slo_p95_ms else linearly degrade
         if p95_ms is None:
@@ -175,9 +174,8 @@ class CarbOnSeer:
         SCALE_EVENTS.inc()
         print(f"[autoscaler] patched {name} -> replicas {replicas}")
 
-    # ---------------------------
     # HTTP endpoint to accept replayer updates
-    # ---------------------------
+
     def start_http_server_for_updates(self):
         if not self.http_enabled:
             return
@@ -211,9 +209,8 @@ class CarbOnSeer:
         t.start()
         print(f"[http] Carbon update endpoint running on {self.http_host}:{self.http_port}/update_carbon")
 
-    # ---------------------------
     # main loop
-    # ---------------------------
+
     def run_loop(self):
         # start http receiver for replayer pushes
         self.start_http_server_for_updates()
