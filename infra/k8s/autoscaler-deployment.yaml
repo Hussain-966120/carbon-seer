@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: carbon-autoscaler
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: carbon-autoscaler
+  template:
+    metadata:
+      labels:
+        app: carbon-autoscaler
+    spec:
+      serviceAccountName: carbon-autoscaler
+      containers:
+      - name: autoscaler
+        image: carbon-autoscaler:latest
+        imagePullPolicy: IfNotPresent
+        args: ["--config", "/config/config.yaml"]
+        volumeMounts:
+        - name: config
+          mountPath: /config
+      volumes:
+      - name: config
+        configMap:
+          name: autoscaler-config

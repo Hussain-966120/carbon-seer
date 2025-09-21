@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: carbon-autoscaler
+  labels:
+    app: carbon-autoscaler
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: carbon-autoscaler
+  template:
+    metadata:
+      labels:
+        app: carbon-autoscaler
+    spec:
+      containers:
+      - name: autoscaler
+        image: carbon-autoscaler:local
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 9102
+        command: ["/bin/sh", "-c"]
+        args:
+          - set -e; pip install --no-cache-dir -r /app/requirements.txt; python /app/autoscaler.py --config /app/config.yaml
+      volumes:
+      - name: autoscaler-code
+        configMap:
+          name: autoscaler-code

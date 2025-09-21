@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-scrape-config
+data:
+  additional-scrape-configs: |
+    - job_name: 'demo-flask'
+      static_configs:
+        - targets: ['demo-flask.default.svc.cluster.local:80']
+    - job_name: 'carbon-autoscaler'
+      static_configs:
+        - targets: ['carbon-autoscaler.default.svc.cluster.local:9102']

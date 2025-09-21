@@ -1,0 +1,67 @@
+{
+  "dashboard": {
+    "id": null,
+    "uid": "carbon-on-seer",
+    "title": "CarbOnSeer - Overview",
+    "tags": ["carbon", "autoscaler", "slo"],
+    "timezone": "browser",
+    "schemaVersion": 30,
+    "version": 1,
+    "refresh": "10s",
+    "panels": [
+      {
+        "type": "graph",
+        "title": "p95 Latency (ms)",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+        "targets": [
+          { "expr": "histogram_quantile(0.95, sum(rate(demo_request_latency_seconds_bucket[1m])) by (le)) * 1000", "refId": "A" }
+        ],
+        "yaxes": [{"format":"ms","label":"p95"}, {"format":"short"}]
+      },
+      {
+        "type": "graph",
+        "title": "Replicas (deployment demo-flask)",
+        "gridPos": {"h": 4, "w": 12, "x": 0, "y": 8},
+        "targets": [
+          {"expr":"kube_deployment_status_replicas{deployment='demo-flask'}", "refId":"A"}
+        ],
+        "yaxes":[{"format":"short"}]
+      },
+      {
+        "type": "graph",
+        "title": "Carbon intensity (gCO2/kWh)",
+        "gridPos": {"h": 6, "w": 12, "x": 12, "y": 0},
+        "targets": [
+          {"expr":"carb_current_gco2_per_kwh", "refId":"A"},
+          {"expr":"carb_current_score", "refId":"B"}
+        ],
+        "yaxes":[{"format":"short","label":"gCO2/kWh"},{"format":"short"}]
+      },
+      {
+        "type": "stat",
+        "title": "Current Combined Score",
+        "gridPos": {"h": 2, "w": 4, "x": 12, "y": 6},
+        "targets":[{"expr":"carb_current_score","refId":"A"}]
+      },
+      {
+        "type": "graph",
+        "title": "Scale events",
+        "gridPos": {"h": 4, "w": 8, "x": 12, "y": 8},
+        "targets":[{"expr":"increase(carb_scale_events_total[1h])","refId":"A"}]
+      },
+      {
+        "type": "table",
+        "title": "Recent Carbon Map (local fallback)",
+        "gridPos":{"h":4,"w":12,"x":0,"y":12},
+        "targets":[{"expr":"carb_current_gco2_per_kwh","refId":"A"}]
+      },
+      {
+        "type": "text",
+        "title": "Notes",
+        "gridPos": {"h": 2, "w": 12, "x": 12, "y": 12},
+        "options":{"content":"CarbOnSeer: combined SLO/carbon/cost scoring. ElectricityMap/WattTime used when available; replayer pushes traces for reproducible demos."}
+      }
+    ]
+  },
+  "overwrite": true
+}

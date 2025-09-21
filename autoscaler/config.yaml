@@ -1,0 +1,23 @@
+prometheus:
+  url: "http://localhost:9190"
+  slo_p95_ms: 200
+  step: "5m"
+  query: "histogram_quantile(0.95, sum(rate(demo_request_latency_seconds_bucket[5m])) by (le))"
+
+providers:
+  electricitymap:
+    enabled: true
+    api_key: "${ELECTRICITYMAP_API_KEY}"
+    zone: "US-CAL-CISO"
+    endpoint: "https://api.electricitymaps.com/v3"
+
+weights:
+  slo: 0.5
+  carbon: 0.5
+  cost: 0.0
+
+deployment:
+  namespace: default
+  name: demo-flask
+  min_replicas: 1
+  max_replicas: 5

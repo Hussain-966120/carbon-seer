@@ -1,0 +1,13 @@
+name: Build
+on:
+  push:
+    branches: [ main ]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build app image
+        run: docker build -t demo-flask ./app
+      - name: Build autoscaler image
+        run: docker build -t carbon-autoscaler ./autoscaler
