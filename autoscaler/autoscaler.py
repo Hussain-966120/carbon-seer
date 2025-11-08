@@ -15,23 +15,29 @@ import os
 import json
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
+
 import requests
 from prometheus_client import start_http_server, Gauge, Counter
 from kubernetes import client, config as k8s_config
 from prometheus_api_client import PrometheusConnect
+
 
 SCALE_EVENTS = Counter("carb_scale_events_total", "Scale events emitted")
 CURRENT_SCORE = Gauge("carb_current_score", "Last computed objective score")
 P95_LATENCY = Gauge("carb_p95_latency_ms", "P95 latency (ms) seen")
 CARBON_G = Gauge("carb_current_gco2_per_kwh", "Current carbon intensity (gCO2/kWh)")
 
+
 class CarbOnSeer:
     def __init__(self, cfg):
         self.cfg = cfg
         # Prometheus
         self.prom = PrometheusConnect(url=cfg['prometheus']['url'], disable_ssl=True)
-        # kube
-        k8s_config.load_kube_config()  # local dev; in-cluster uses load_incluster_config
+        # kube configuration fix: try in-cluster first, else fallback to local kubeconfig
+        try:
+            k8s_config.load_incluster_config()
+        except Exception:
+            k8s_config.load_kube_config()
         self.apps = client.AppsV1Api()
         # carbon
         self.carbon_map = cfg.get("carbon_map", {})
@@ -51,6 +57,7 @@ class CarbOnSeer:
         self.cache_ttl = cfg.get("cache_ttl_seconds", 300)
 
 
+
     # Prometheus queries
    
     def query_p95(self):
@@ -63,6 +70,7 @@ class CarbOnSeer:
         except Exception as e:
             print("Prometheus query error:", e)
         return None
+
 
     # Carbon providers
  
@@ -95,6 +103,7 @@ class CarbOnSeer:
             print("ElectricityMap fetch error:", e)
         return None
 
+    
     def fetch_watttime_index(self, params=None):
         prov = self.providers.get("watttime", {})
         token = prov.get("token") or os.getenv("WATTTIME_TOKEN")
@@ -117,6 +126,7 @@ class CarbOnSeer:
         except Exception as e:
             print("WattTime fetch error:", e)
         return None
+
 
     def get_carbon(self, region="local"):
         now = time.time()
@@ -147,6 +157,7 @@ class CarbOnSeer:
         return val
 
 
+
     # scoring & scaling
  
     def compute_scores(self, p95_ms, region='local'):
@@ -162,10 +173,12 @@ class CarbOnSeer:
         combined = self.weights['slo']*slo_score + self.weights['carbon']*carbon_score + self.weights['cost']*cost_score
         return {'slo': slo_score, 'carbon': carbon_score, 'cost': cost_score, 'combined': combined, 'carbon_g': carbon_val}
 
+
     def get_current_replicas(self):
         ns = self.deployment['namespace']; name = self.deployment['name']
         dep = self.apps.read_namespaced_deployment(name, ns)
         return dep.spec.replicas
+
 
     def patch_replicas(self, replicas):
         ns = self.deployment['namespace']; name = self.deployment['name']
@@ -174,11 +187,14 @@ class CarbOnSeer:
         SCALE_EVENTS.inc()
         print(f"[autoscaler] patched {name} -> replicas {replicas}")
 
+
     # HTTP endpoint to accept replayer updates
+
 
     def start_http_server_for_updates(self):
         if not self.http_enabled:
             return
+
 
         parent = self
         class ReqHandler(BaseHTTPRequestHandler):
@@ -204,12 +220,15 @@ class CarbOnSeer:
                 # silence default logging
                 return
 
+
         server = HTTPServer((self.http_host, self.http_port), ReqHandler)
         t = threading.Thread(target=server.serve_forever, daemon=True)
         t.start()
         print(f"[http] Carbon update endpoint running on {self.http_host}:{self.http_port}/update_carbon")
 
+
     # main loop
+
 
     def run_loop(self):
         # start http receiver for replayer pushes
@@ -241,6 +260,7 @@ class CarbOnSeer:
                     print("Error patching replicas:", e)
             print(f"[autoscaler] p95={p95}ms scores={scores} replicas={cur}->{newr}")
             time.sleep(self.cfg.get("interval_s", 15))
+
 
 
 if __name__ == "__main__":

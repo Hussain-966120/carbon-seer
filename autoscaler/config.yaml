@@ -1,5 +1,5 @@
 prometheus:
-  url: "http://localhost:9190"
+  url: "http://prometheus-server.prometheus.svc.cluster.local:80"
   slo_p95_ms: 200
   step: "5m"
   query: "histogram_quantile(0.95, sum(rate(demo_request_latency_seconds_bucket[5m])) by (le))"

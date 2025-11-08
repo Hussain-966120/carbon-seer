@@ -2,6 +2,8 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: carbon-autoscaler
+  labels:
+    app: carbon-autoscaler
 spec:
   replicas: 1
   selector:
@@ -15,9 +17,15 @@ spec:
       serviceAccountName: carbon-autoscaler
       containers:
       - name: autoscaler
-        image: carbon-autoscaler:latest
-        imagePullPolicy: IfNotPresent
-        args: ["--config", "/config/config.yaml"]
+        image: carbon-autoscaler:local
+        imagePullPolicy: Never
+        command:
+          - /bin/sh
+          - -c
+          - |
+            set -e;
+            pip install --no-cache-dir -r /app/requirements.txt;
+            python /app/autoscaler.py --config /config/config.yaml
         volumeMounts:
         - name: config
           mountPath: /config
@@ -25,3 +33,4 @@ spec:
       - name: config
         configMap:
           name: autoscaler-config
+          optional: false
